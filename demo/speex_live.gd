@@ -13,6 +13,7 @@ const NARROW_RATES := [8000, 12000, 16000, 24000]
 
 var capture: AudioEffectCapture
 var preprocess: SpeexPreprocess
+var aec: SpeexEchoCanceller
 var down_rs: SpeexResampler
 var up_rs: SpeexResampler
 
@@ -21,10 +22,12 @@ var narrow_rate: int = 16000
 var quality: int = 5
 var frame_size: int = 160
 var mono_carry: PackedFloat32Array = PackedFloat32Array()
+var far_frames: Array = []  # queued far-end frames for AEC (what we played)
 var vad_hits: int = 0
 var frames_seen: int = 0
 var listening: bool = false
 var roundtrip: bool = true
+var aec_on: bool = false
 var playback: AudioStreamGeneratorPlayback
 
 
@@ -52,6 +55,7 @@ func _ready() -> void:
 	%VadCheck.toggled.connect(_on_vad_toggled)
 	%AgcCheck.toggled.connect(_on_agc_toggled)
 	%DenoiseCheck.toggled.connect(_on_denoise_toggled)
+	%AecCheck.toggled.connect(_on_aec_toggled)
 	%AgcLevel.value_changed.connect(_on_agc_level_changed)
 	%Quality.value_changed.connect(_on_quality_changed)
 	%NarrowRate.item_selected.connect(_on_narrow_rate_selected)
@@ -81,8 +85,16 @@ func _rebuild_dsp() -> void:
 	up_rs = SpeexResampler.new()
 	assert(down_rs.setup(1, mic_rate, narrow_rate, quality) == OK)
 	assert(up_rs.setup(1, narrow_rate, mic_rate, quality) == OK)
+	# ~100 ms echo tail
+	var filter_len: int = maxi(frame_size * 2, int(narrow_rate * 0.1))
+	aec = SpeexEchoCanceller.new()
+	assert(aec.setup(frame_size, filter_len, narrow_rate) == OK)
+	aec_on = %AecCheck.button_pressed
 	mono_carry.clear()
-	%FrameInfo.text = "Frame: %d samples @ %d Hz (%d ms)" % [frame_size, narrow_rate, FRAME_MS]
+	far_frames.clear()
+	%FrameInfo.text = "Frame: %d samples @ %d Hz (%d ms)  AEC filter: %d" % [
+		frame_size, narrow_rate, FRAME_MS, filter_len
+	]
 
 
 func _setup_monitor() -> void:
@@ -137,6 +149,13 @@ func _on_denoise_toggled(on: bool) -> void:
 		preprocess.set_denoise(on)
 
 
+func _on_aec_toggled(on: bool) -> void:
+	aec_on = on
+	if aec:
+		aec.reset()
+	far_frames.clear()
+
+
 func _on_agc_level_changed(v: float) -> void:
 	%AgcLevelLabel.text = "AGC level: %.0f" % v
 	if preprocess:
@@ -185,10 +204,19 @@ func _process(_delta: float) -> void:
 		for i in frame_size:
 			frame[i] = mono_carry[i]
 		mono_carry = mono_carry.slice(frame_size)
-		var processed: PackedFloat32Array = preprocess.process(frame)
+		var far := PackedFloat32Array()
+		far.resize(frame_size)
+		if far_frames.size() > 0:
+			far = far_frames.pop_front()
+		var cleaned: PackedFloat32Array = frame
+		if aec_on and aec:
+			cleaned = aec.process(frame, far)
+		var processed: PackedFloat32Array = preprocess.process(cleaned)
 		frames_seen += 1
 		if preprocess.get_last_vad():
 			vad_hits += 1
+		# Far-end reference for later mic frames = what we send to speakers.
+		far_frames.append(processed)
 		for i in processed.size():
 			out_for_up.append(processed[i])
 

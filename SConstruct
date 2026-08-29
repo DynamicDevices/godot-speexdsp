@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Build SpeexDSP GDExtension (resampler + preprocess; Speex sources untouched).
+"""Build SpeexDSP GDExtension (resampler + preprocess + echo; Speex sources untouched).
 
   git submodule update --init --recursive
   scons platform=linux target=template_debug
@@ -93,6 +93,7 @@ obj_rs = env_rs_cpp.SharedObject("build/SpeexResampler", "src/SpeexResampler.cpp
 env_pp_cpp = env.Clone()
 env_pp_cpp.Append(CXXFLAGS=cxx_common, CPPPATH=["src"] + speex_inc, CPPDEFINES=preprocess_defs)
 obj_pp = env_pp_cpp.SharedObject("build/SpeexPreprocess", "src/SpeexPreprocess.cpp")
+obj_echo = env_pp_cpp.SharedObject("build/SpeexEchoCanceller", "src/SpeexEchoCanceller.cpp")
 obj_reg = env_pp_cpp.SharedObject("build/register_types", "src/register_types.cpp")
 
 env_link = env.Clone()
@@ -103,6 +104,6 @@ os.makedirs(addon_bin, exist_ok=True)
 
 lib = env_link.SharedLibrary(
     f"{addon_bin}/libspeexdsp{env['suffix']}{env['SHLIBSUFFIX']}",
-    source=[obj_rs, obj_pp, obj_reg],
+    source=[obj_rs, obj_pp, obj_echo, obj_reg],
 )
 Default(lib)

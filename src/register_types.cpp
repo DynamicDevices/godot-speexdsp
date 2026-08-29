@@ -1,5 +1,6 @@
 #include "SpeexResampler.hpp"
 #include "SpeexPreprocess.hpp"
+#include "SpeexEchoCanceller.hpp"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
@@ -15,6 +16,7 @@ void initialize_speexdsp_module(ModuleInitializationLevel p_level)
 	}
 	ClassDB::register_class<SpeexResampler>();
 	ClassDB::register_class<SpeexPreprocess>();
+	ClassDB::register_class<SpeexEchoCanceller>();
 }
 
 void uninitialize_speexdsp_module(ModuleInitializationLevel p_level)
