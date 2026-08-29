@@ -39,6 +39,13 @@ var speech := pp.get_last_vad()
 var aec := SpeexEchoCanceller.new()
 aec.setup(160, 1600, 16000)  # frame, filter_length (~100 ms), rate
 var cleaned := aec.process(mic_frame, far_end_frame)
+
+# Stereo Vector2 frames (mic / AudioEffectCapture style):
+# mono_mix < 0 → dual Speex states on L/R; 0..1 → mix then process, copy to x,y
+var stereo_out: PackedVector2Array = pp.process2(stereo_in, -1.0)
+var stereo_mix := pp.process2(stereo_in, 0.5)  # equal L/R mix
+rs.setup(2, 48000, 16000, 5)
+var stereo_rs: PackedVector2Array = rs.process2(stereo_in, -1.0)
 ```
 
 Headless: `demo/speex_smoke.tscn` → `SPEEXDSP_GODOT_SMOKE_OK`.

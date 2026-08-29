@@ -2,6 +2,7 @@
 
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/packed_float32_array.hpp>
+#include <godot_cpp/variant/packed_vector2_array.hpp>
 
 struct SpeexResamplerState_;
 typedef struct SpeexResamplerState_ SpeexResamplerState;
@@ -39,6 +40,13 @@ public:
 
 	/** Resample mono or interleaved float PCM (length must be multiple of channels). */
 	PackedFloat32Array process(const PackedFloat32Array &input);
+
+	/**
+	 * Stereo Vector2 frames in/out.
+	 * mono_mix < 0: requires setup(channels=2); interlaces x,y, resamples, returns Vector2.
+	 * mono_mix in [0,1]: mix to mono (needs channels=1), resample, copy to both x,y.
+	 */
+	PackedVector2Array process2(const PackedVector2Array &input, float mono_mix = -1.f);
 
 	void reset();
 	int get_channels() const;
