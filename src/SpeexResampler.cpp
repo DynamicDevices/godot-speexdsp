@@ -16,6 +16,7 @@ void SpeexResampler::_bind_methods()
 {
 	ClassDB::bind_method(D_METHOD("setup", "channels", "in_rate", "out_rate", "quality"),
 			&SpeexResampler::setup, DEFVAL(5));
+	ClassDB::bind_method(D_METHOD("set_rate", "in_rate", "out_rate"), &SpeexResampler::set_rate);
 	ClassDB::bind_method(D_METHOD("process", "input"), &SpeexResampler::process);
 	ClassDB::bind_method(D_METHOD("reset"), &SpeexResampler::reset);
 	ClassDB::bind_method(D_METHOD("get_channels"), &SpeexResampler::get_channels);
@@ -62,6 +63,26 @@ Error SpeexResampler::setup(int p_channels, int p_in_rate, int p_out_rate, int p
 	in_rate = p_in_rate;
 	out_rate = p_out_rate;
 	quality = p_quality;
+	return OK;
+}
+
+Error SpeexResampler::set_rate(int p_in_rate, int p_out_rate)
+{
+	if (!st) {
+		UtilityFunctions::push_error("SpeexResampler.set_rate: call setup() first");
+		return ERR_UNCONFIGURED;
+	}
+	if (p_in_rate <= 0 || p_out_rate <= 0) {
+		return ERR_INVALID_PARAMETER;
+	}
+	int err = speex_resampler_set_rate(st, (spx_uint32_t)p_in_rate, (spx_uint32_t)p_out_rate);
+	if (err != RESAMPLER_ERR_SUCCESS) {
+		UtilityFunctions::push_error(
+				String("SpeexResampler.set_rate failed: ") + String(speex_resampler_strerror(err)));
+		return FAILED;
+	}
+	in_rate = p_in_rate;
+	out_rate = p_out_rate;
 	return OK;
 }
 
