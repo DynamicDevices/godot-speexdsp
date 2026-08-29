@@ -1,0 +1,11 @@
+.godot/
+**/bin/
+!addons/speexdsp/bin/.gitkeep
+build/
+*.os
+*.o
+.sconsign.dblite
+__pycache__/
+.venv/
+result
+.direnv/

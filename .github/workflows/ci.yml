@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  host-resample:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - name: Host Speex resampler smoke
+        run: |
+          cc -std=c99 -O2 -Wall -Wextra \
+            -DOUTSIDE_SPEEX -DRANDOM_PREFIX=godot_speexdsp -DFLOATING_POINT -DEXPORT= \
+            -Ithirdparty/speexdsp/include/speex -Ithirdparty/speexdsp/libspeexdsp \
+            -o /tmp/smoke_resample tools/smoke_resample.c thirdparty/speexdsp/libspeexdsp/resample.c -lm
+          /tmp/smoke_resample | tee /tmp/smoke.out
+          grep -q SPEEX_RESAMPLE_OK /tmp/smoke.out
