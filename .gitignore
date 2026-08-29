@@ -9,3 +9,4 @@ __pycache__/
 .venv/
 result
 .direnv/
+thirdparty/speexdsp/include/speex/speexdsp_config_types.h

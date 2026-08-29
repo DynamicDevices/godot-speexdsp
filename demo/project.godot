@@ -1,0 +1,10 @@
+; Engine configuration for SpeexDSP smoke demo.
+config_version=5
+
+[application]
+config/name="SpeexDSP Smoke"
+run/main_scene="res://speex_smoke.tscn"
+config/features=PackedStringArray("4.5")
+
+[audio]
+driver/enable_input=false

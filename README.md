@@ -6,8 +6,10 @@ stays in upstream.
 
 ## Status
 
-- **SpeexResampler** — `RefCounted` wrapping `speex_resampler_*` (float interleaved)
-- Later (same addon): AGC, VAD, etc. for vizemes / VoIP
+| Class | Role |
+|-------|------|
+| `SpeexResampler` | Float interleaved resampler (`speex_resampler_*`) |
+| `SpeexPreprocess` | Denoise / AGC / VAD on fixed mono frames (`speex_preprocess_*`) |
 
 ## Build
 
@@ -23,7 +25,23 @@ scons platform=linux target=template_debug
 var rs := SpeexResampler.new()
 rs.setup(1, 48000, 16000, 5)  # channels, in_rate, out_rate, quality 0–10
 var out: PackedFloat32Array = rs.process(pcm_in)
+
+var pp := SpeexPreprocess.new()
+pp.setup(160, 16000)  # 10 ms @ 16 kHz
+pp.set_vad(true)
+pp.set_agc(true)
+pp.set_agc_level(8000.0)
+var frame_out := pp.process(frame_in)  # length == frame_size
+var speech := pp.get_last_vad()
 ```
+
+Headless: `demo/speex_smoke.tscn` → `SPEEXDSP_GODOT_SMOKE_OK`.
+
+## Vizemes
+
+`vizemes-align` MelFrontend mic path (`push_pcm_stereo`) links the same Speex
+resampler (submodule) instead of linear interpolation. GDScript
+`VisemeUtils.resample_pcm` uses `SpeexResampler` when the addon is loaded.
 
 ## Layout
 

@@ -1,8 +1,15 @@
 #ifndef GODOT_SPEEXDSP_CONFIG_H
 #define GODOT_SPEEXDSP_CONFIG_H
 
-/* Build glue for SpeexDSP when compiled OUTSIDE_SPEEX (do not edit thirdparty/). */
+/* Build glue for SpeexDSP (do not edit thirdparty/speexdsp/). */
+#ifndef FLOATING_POINT
 #define FLOATING_POINT
-#define USE_KISS_FFT 0
+#endif
+#ifndef USE_KISS_FFT
+#define USE_KISS_FFT
+#endif
+#ifndef EXPORT
+#define EXPORT
+#endif
 
 #endif /* GODOT_SPEEXDSP_CONFIG_H */

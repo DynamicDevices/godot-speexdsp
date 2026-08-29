@@ -6,17 +6,34 @@ on:
   pull_request:
 
 jobs:
-  host-resample:
+  host-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
           submodules: recursive
-      - name: Host Speex resampler smoke
+      - name: Generate Speex config types
+        run: cp thirdparty/speexdsp_glue/speexdsp_config_types.h thirdparty/speexdsp/include/speex/speexdsp_config_types.h
+      - name: Host resampler smoke
         run: |
-          cc -std=c99 -O2 -Wall -Wextra \
+          cc -std=c99 -O2 -Wall -Wno-sign-compare \
             -DOUTSIDE_SPEEX -DRANDOM_PREFIX=godot_speexdsp -DFLOATING_POINT -DEXPORT= \
             -Ithirdparty/speexdsp/include/speex -Ithirdparty/speexdsp/libspeexdsp \
             -o /tmp/smoke_resample tools/smoke_resample.c thirdparty/speexdsp/libspeexdsp/resample.c -lm
-          /tmp/smoke_resample | tee /tmp/smoke.out
-          grep -q SPEEX_RESAMPLE_OK /tmp/smoke.out
+          /tmp/smoke_resample | tee /tmp/rs.out
+          grep -q SPEEX_RESAMPLE_OK /tmp/rs.out
+      - name: Host preprocess smoke
+        run: |
+          cc -std=c99 -O2 -Wall -Wno-sign-compare -Wno-unused-parameter \
+            -DHAVE_CONFIG_H -DFLOATING_POINT -DUSE_KISS_FFT -DEXPORT= \
+            -Ithirdparty/speexdsp/include -Ithirdparty/speexdsp/include/speex \
+            -Ithirdparty/speexdsp/libspeexdsp -Ithirdparty/speexdsp_glue \
+            -o /tmp/smoke_pp tools/smoke_preprocess.c \
+            thirdparty/speexdsp/libspeexdsp/preprocess.c \
+            thirdparty/speexdsp/libspeexdsp/mdf.c \
+            thirdparty/speexdsp/libspeexdsp/fftwrap.c \
+            thirdparty/speexdsp/libspeexdsp/filterbank.c \
+            thirdparty/speexdsp/libspeexdsp/kiss_fft.c \
+            thirdparty/speexdsp/libspeexdsp/kiss_fftr.c -lm
+          /tmp/smoke_pp | tee /tmp/pp.out
+          grep -q SPEEX_PREPROCESS_OK /tmp/pp.out
