@@ -1,4 +1,5 @@
 #include "SpeexResampler.hpp"
+#include "speex_stereo_util.hpp"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -18,6 +19,8 @@ void SpeexResampler::_bind_methods()
 			&SpeexResampler::setup, DEFVAL(5));
 	ClassDB::bind_method(D_METHOD("set_rate", "in_rate", "out_rate"), &SpeexResampler::set_rate);
 	ClassDB::bind_method(D_METHOD("process", "input"), &SpeexResampler::process);
+	ClassDB::bind_method(D_METHOD("process2", "input", "mono_mix"), &SpeexResampler::process2,
+			DEFVAL(-1.f));
 	ClassDB::bind_method(D_METHOD("reset"), &SpeexResampler::reset);
 	ClassDB::bind_method(D_METHOD("get_channels"), &SpeexResampler::get_channels);
 	ClassDB::bind_method(D_METHOD("get_in_rate"), &SpeexResampler::get_in_rate);
@@ -127,6 +130,36 @@ PackedFloat32Array SpeexResampler::process(const PackedFloat32Array &input)
 		out[(int)i] = out_buf[i];
 	}
 	return out;
+}
+
+PackedVector2Array SpeexResampler::process2(const PackedVector2Array &input, float mono_mix)
+{
+	PackedVector2Array empty;
+	if (!st || input.is_empty()) {
+		return empty;
+	}
+	if (mono_mix < 0.f) {
+		if (channels != 2) {
+			UtilityFunctions::push_error(
+					"SpeexResampler.process2(mono_mix<0): call setup(channels=2, ...) first");
+			return empty;
+		}
+		PackedFloat32Array interleaved = speex_stereo::interleaved_from_stereo(input);
+		PackedFloat32Array out = process(interleaved);
+		if (out.is_empty() || out.size() % 2 != 0) {
+			return empty;
+		}
+		return speex_stereo::stereo_from_interleaved(out);
+	}
+	if (channels != 1) {
+		UtilityFunctions::push_error(
+				"SpeexResampler.process2(mono_mix in [0,1]): call setup(channels=1, ...) first");
+		return empty;
+	}
+	PackedFloat32Array left, right, mono;
+	speex_stereo::stereo_to_planes(input, mono_mix, left, right, mono);
+	PackedFloat32Array out_m = process(mono);
+	return speex_stereo::mono_to_stereo(out_m);
 }
 
 void SpeexResampler::reset()
