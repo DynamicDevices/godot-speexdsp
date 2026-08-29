@@ -10,6 +10,10 @@ func _ready() -> void:
 		pcm[i] = 0.2 * sin(TAU * 440.0 * float(i) / 48000.0)
 	var out: PackedFloat32Array = rs.process(pcm)
 	assert(out.size() > 100)
+	assert(rs.set_rate(48000, 8000) == OK)
+	assert(rs.get_out_rate() == 8000)
+	var out_narrow: PackedFloat32Array = rs.process(pcm)
+	assert(out_narrow.size() > 0 and out_narrow.size() < out.size())
 
 	var pp := SpeexPreprocess.new()
 	assert(pp.setup(160, 16000) == OK)
@@ -24,5 +28,5 @@ func _ready() -> void:
 	var processed: PackedFloat32Array = pp.process(frame)
 	assert(processed.size() == 160)
 
-	print("SPEEXDSP_GODOT_SMOKE_OK resample_out=%d vad=%s" % [out.size(), str(pp.get_last_vad())])
+	print("SPEEXDSP_GODOT_SMOKE_OK resample_out=%d set_rate_out=%d vad=%s" % [out.size(), out_narrow.size(), str(pp.get_last_vad())])
 	get_tree().quit(0)

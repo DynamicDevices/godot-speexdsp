@@ -25,6 +25,7 @@ scons platform=linux target=template_debug
 var rs := SpeexResampler.new()
 rs.setup(1, 48000, 16000, 5)  # channels, in_rate, out_rate, quality 0–10
 var out: PackedFloat32Array = rs.process(pcm_in)
+rs.set_rate(48000, 8000)  # live rate change without teardown
 
 var pp := SpeexPreprocess.new()
 pp.setup(160, 16000)  # 10 ms @ 16 kHz
@@ -36,6 +37,9 @@ var speech := pp.get_last_vad()
 ```
 
 Headless: `demo/speex_smoke.tscn` → `SPEEXDSP_GODOT_SMOKE_OK`.
+
+Live mic (VAD/AGC/denoise + down→up hear-back): open `demo/speex_live.tscn`
+in the editor (based on the goatchurchprime mic_record Capture-bus pattern).
 
 ## Vizemes
 

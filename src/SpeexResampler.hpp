@@ -31,6 +31,12 @@ public:
 	 */
 	Error setup(int p_channels, int p_in_rate, int p_out_rate, int p_quality = 5);
 
+	/**
+	 * Change rates on a live resampler (speex_resampler_set_rate).
+	 * Does not recreate the state; filter adapts. Call setup() to change quality/channels.
+	 */
+	Error set_rate(int p_in_rate, int p_out_rate);
+
 	/** Resample mono or interleaved float PCM (length must be multiple of channels). */
 	PackedFloat32Array process(const PackedFloat32Array &input);
 
