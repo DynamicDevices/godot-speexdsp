@@ -10,6 +10,7 @@ stays in upstream.
 |-------|------|
 | `SpeexResampler` | Float interleaved resampler (`speex_resampler_*`) |
 | `SpeexPreprocess` | Denoise / AGC / VAD on fixed mono frames (`speex_preprocess_*`) |
+| `SpeexEchoCanceller` | Acoustic echo canceller (`speex_echo_*`; needs far-end ref) |
 
 ## Build
 
@@ -34,12 +35,17 @@ pp.set_agc(true)
 pp.set_agc_level(8000.0)
 var frame_out := pp.process(frame_in)  # length == frame_size
 var speech := pp.get_last_vad()
+
+var aec := SpeexEchoCanceller.new()
+aec.setup(160, 1600, 16000)  # frame, filter_length (~100 ms), rate
+var cleaned := aec.process(mic_frame, far_end_frame)
 ```
 
 Headless: `demo/speex_smoke.tscn` → `SPEEXDSP_GODOT_SMOKE_OK`.
 
-Live mic (VAD/AGC/denoise + down→up hear-back): open `demo/speex_live.tscn`
+Live mic (VAD/AGC/denoise/AEC + down→up hear-back): open `demo/speex_live.tscn`
 in the editor (based on the goatchurchprime mic_record Capture-bus pattern).
+AEC uses the round-trip speaker path as the far-end reference.
 
 ## Vizemes
 
